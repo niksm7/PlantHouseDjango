@@ -1,0 +1,295 @@
+{% extends 'shop/basic.html' %} {% block title %}{{product.product_name}}Product View- Plant House{% endblock %}
+{% block css %}
+.btn-primary:disabled{
+margin-top: 23px;
+}
+#userimage{
+width: 49px;
+}
+#replyImage{
+width: 49px;
+}
+.reply{
+padding-top: 10px;
+}
+@media (max-width: 767px) {
+#replyRow{
+padding-left: 32px;
+}
+#replies{
+padding-left: 32px;
+}
+}
+body{
+margin:0;
+font-family: sans-serif;
+}
+
+*{
+box-sizing: border-box;
+}
+
+.fa{
+font-size: 32px;
+color:gold;
+}
+#reviewInput{
+width:900px;
+}
+{% endblock %}
+{% block body %}
+{% load humanize %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="row">
+                <img id="imagepr{{product.id}}" src="/media/{{product.plantImage}}" width="233px" height="385px">
+            </div>
+            <div class="row">
+                <button class="btn btn-primary mx-2 my-4" id="buy_now">Buy Now</button>
+                <span id="divpr{{product.id}}" class="divpr">
+                    <button id="pr{{product.id}}" class="btn btn-primary cart my-4">Add to cart
+                    </button></span>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h2 id="namepr{{product.id}}">{{product.plantName}}</h2>
+            <b>
+                <p id="pricepr{{product.id}}">Rs.{{product.plantPrice}}</p>
+            </b>
+            <p>{{product.plantDesc}}</p>
+            <h6 class="card-text" id="nurserypr{{product.id}}" hidden>{{product.plantNursery}}</h6>
+        </div>
+    </div>
+    <!-- Review -->
+    <br><br>
+    <h4>Reviews({{reviews.count}})</h4>
+    <br>
+    <div class="my-2">
+        {% if user.is_authenticated %}
+        <form action="postReview" method="post">{% csrf_token %}
+            <div class="form-group">
+                <div class="ratings">
+                    <span class="fa fa-star-o"></span>
+                    <span class="fa fa-star-o"></span>
+                    <span class="fa fa-star-o"></span>
+                    <span class="fa fa-star-o"></span>
+                    <span class="fa fa-star-o"></span>
+                </div>
+                <input type="text" id="rating-value" name="rating-value" hidden>
+                <textarea type="text" class="form-control" id='reviewInput' name="review"
+                    placeholder="Enter your Review Here"></textarea>
+            </div>
+            <input type="hidden" name="productSno" value="{{product.id}}">
+            <input type="hidden" name='parentSno' value="">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+        {% else %}
+        <h5>Please Login to post Review</h5><br>
+        {% endif %}
+    </div>
+    {% for review in reviews %}
+    <div class="row my-3 ">
+        <div class="col-md-1">
+            <img class="rounded float-left" id="userimage" src="/media/shop/images/user2.jpeg" alt="user">
+        </div>
+        <div class="col-md-11">
+            <b>{{review.user.username}}</b>
+            <span style="font-size: 13px;">{{review.timestamp | naturaltime}}</span><br>
+            {% load my_filters %}
+            {% load convertInt %}
+            {% for i in review.rating|convertInt|times %}
+            <span class="fa fa-star"></span>
+            {% endfor %}
+            <div style="font-size: 21px">{{review.review}}</div>
+
+            <div class="reply mx-0">
+            {% if user.is_superuser %}
+            <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse"
+                data-target="#replyBox{{review.sno}}" aria-expanded="false"
+                aria-controls="replyBox{{review.sno}}">Reply</button>
+            {% endif %}
+            <div class="collapse" id="replyBox{{review.sno}}">
+                <div class="card card-body my-2">
+                    <form action="postReview" method="post">{% csrf_token %}
+                        <div class="form-group">
+                            <label for="comment">Reply Here</label>
+                            <input type="text" class="form-control" name="review" placeholder="Enter Reply here">
+                            <input type="hidden" name='parentSno' value="{{review.sno}}">
+                        </div>
+                        <input type="hidden" name="productSno" value="{{product.id}}">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+            <div class="replies my-2">
+                {% load extras %}
+                <b id="replies">Replies</b>
+                {% for reply in replyDict|get_val:review.sno %}
+                <div class="row my-3" id="replyRow">
+                    <div class="col-md-1">
+                        <img class="rounded float-left" id='replyImage' src="/media/shop/images/user2.jpeg" alt="user">
+                    </div>
+                    <div class="col-md-11">
+                        <b>{{reply.user.username}}</b>
+                        <span style="font-size: 13px;">{{reply.timestamp | naturaltime}}</span>
+                        <div style="font-size: 19px"> {{reply.review}}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        </div>
+    </div>
+    {% endfor %}
+
+
+</div>
+{% endblock %} {% block js %}
+<script>
+    var is_start;
+    $("#navbarSupportedContent").append(`<form method="get" action="/shop/search/" class="form-inline my-2 my-lg-0">
+                <span id="search"><input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="search"></span>
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>`);
+    $("#basicNavbar").append(`<button type="button" class="btn btn-secondary mx-2" id="popcart" data-container="body" data-toggle="popover" data-placement="bottom" data-html="true" data-content="Vivamus
+sagittis lacus vel augue laoreet rutrum faucibus.">
+  Cart(<span id="cart">0</span>)
+</button>`);
+    //find out the cart items from local storage
+    if (localStorage.getItem('cart') == null) {
+        var cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart'));
+        is_start = 1;
+        updateCart(cart);
+    }
+    if (cart[{{ product.id }}] != undefined) {
+        let idst = item;
+        document.getElementById('div' + item).innerHTML = `<button id="A${idst}" class="btn btn-primary cart" disabled>Added to cart</button>`;
+    }
+    $('.divpr').on('click', 'button.cart', function () {
+        var idstr = this.id.toString();
+        qty = 1;
+        name = document.getElementById("name" + idstr).innerHTML;
+        price = document.getElementById("price" + idstr).innerHTML.slice(3);
+        image = document.getElementById("image" + idstr).getAttribute('src');
+        nursery = document.getElementById('nursery' + idstr).innerHTML;
+        cart[idstr] = [qty, name, price, image,nursery];
+        updateCart(cart);
+
+    });
+    updatePopover(cart);
+
+    function updatePopover(cart) {
+        var popstr = "";
+        popstr = popstr + "<h5>Cart for your items in Myshopping Cart</h5><div class='mx-2 my-2'>";
+        var i = 1;
+        for (var item in cart) {
+            if (cart[item][0] != 0) {
+                popstr = popstr + "<b>" + i + "</b>. ";
+                popstr = popstr + cart[item][1].slice(0, 19) + "..." + " Qty:" + cart[item][0] + " " + "Price:" + cart[item][2] + "<br>";
+                i = i + 1;
+            } else {
+                for (var item in cart) {
+                    if (cart[item][0] == 0) {
+                        delete cart[item];
+                        window.location.reload();
+                        updateCart(cart);
+                    }
+                }
+            }
+        }
+        popstr = popstr + "</div> <a href='/shop/cart'><button class='btn btn-primary' id='checkout'>View Cart</button></a>";
+        document.getElementById('popcart').setAttribute('data-content', popstr);
+        if (is_start != 0) {
+            console.log(is_start)
+            is_start = is_start - 1;
+        }
+        else {
+            console.log(is_start)
+            $('#popcart').trigger("dblclick");
+        }
+    }
+
+
+
+    function updateCart(cart) {
+        var sum = 0;
+        for (var item in cart) {
+            sum = sum + cart[item][0];
+        }
+        var item = "pr{{product.id}}";
+        if (cart[item] != undefined) {
+            let idst = item;
+            document.getElementById('div' + item).innerHTML = `<button id="A${idst}" class="btn btn-primary cart" disabled>Added to cart</button>`;
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            //dynamically update the cart in the database
+            $.ajax({
+            url: '/shop/ajax/cartUpdate/',
+            data: {
+            'cart': JSON.stringify(cart)
+            }
+            });
+            document.getElementById('cart').innerHTML = sum;
+            updatePopover(cart);
+        }
+    }
+
+    $("#popcart").popover({ trigger: "manual" }).click(function () {
+        window.location = "/shop/cart";
+    })
+    $('#buy_now').on('click', function () {
+        $('#pr{{product.id}}').trigger('click')
+        {% if user.is_authenticated %}
+        window.location = '/shop/checkout/';
+        {% else %}
+        $('#login_button').trigger('click');
+        {% endif %}
+    })
+    $("#popcart").popover({ trigger: "manual" }).dblclick(function () {
+        var pop = $(this);
+
+        pop.popover("show")
+        pop.on('shown.bs.popover', function () {
+            setTimeout(function () {
+                pop.popover("hide")
+            }, 5700);
+        })
+    })
+    {% if user.is_authenticated %}
+    const stars = document.querySelector(".ratings").children;
+    const ratingValue = document.querySelector("#rating-value");
+    let index;
+
+    for (let i = 0; i < stars.length; i++) {
+        stars[i].addEventListener("mouseover", function () {
+            for (let j = 0; j < stars.length; j++) {
+                stars[j].classList.remove("fa-star");
+                stars[j].classList.add("fa-star-o");
+            }
+            for (let j = 0; j <= i; j++) {
+                stars[j].classList.remove("fa-star-o");
+                stars[j].classList.add("fa-star");
+            }
+        })
+        stars[i].addEventListener("click", function () {
+            ratingValue.value = i + 1;
+            index = i;
+        })
+        stars[i].addEventListener("mouseout", function () {
+
+            for (let j = 0; j < stars.length; j++) {
+                stars[j].classList.remove("fa-star");
+                stars[j].classList.add("fa-star-o");
+            }
+            for (let j = 0; j <= index; j++) {
+                stars[j].classList.remove("fa-star-o");
+                stars[j].classList.add("fa-star");
+            }
+        })
+    }
+{% endif %}
+</script>
+{% endblock %}

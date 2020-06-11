@@ -1,0 +1,205 @@
+{% extends 'shop/basic.html' %} {% block title %}Welcome To Plant House{% endblock %} {% block css %}.col-md-3 {
+display: inline-block; margin-left:-4px; } .carousel-indicators .active { background-color: blue; } .col-md-3 img{
+width: 170px; height:
+200px; } body .carousel-indicator li{ background-color: blue; } body .carousel-indicators{ bottom: -35px; } body
+.carousel-control-prev-icon, body .carousel-control-next-icon{ background-color: blue; } .carousel-control-prev,
+.carousel-control-next{ top:
+auto; bottom: auto; padding-top: 222px; } body .no-padding{ padding-left: 0, padding-right: 0; } .carousel-indicators li
+{ background-color: #7c58d4; }
+@media (min-width: 767px) {
+    .hidden-xs{
+        display:none;
+    }
+}
+@media (max-width: 767px) {
+    #popcart{
+        margin-top:10px;
+    }
+
+}
+{% endblock %} {% block body %} {% load static %}
+<nav id="basicNavbar" class="navbar navbar-expand-lg navbar-dark bg-dark hidden-xs">
+    <form method="get" action="/shop/search/" class="form-inline my-2 my-lg-0">
+                <span id="search"><input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="search"></span>
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>
+</nav>
+<div class="container">
+    <!--Slideshow starts here -->
+    {% for products,range,nSlides in allProds %}
+    <h1>{{products.0.plantNursery}}</h1>
+    <div class="row">
+        <div id="demo{{forloop.counter}}" class="col carousel slide my-3" data-ride="carousel">
+            <ul class="carousel-indicators">
+                <li data-target="#demo{{forloop.counter}}" data-slide-to="0" class="active"></li>
+
+                {% for i in range %}
+                <li data-target="#demo{{forloop.parentloop.counter}}" data-slide-to="{{i}}"></li>
+                {% endfor %}
+            </ul>
+
+            <div class="container carousel-inner no-padding">
+
+                <div class="carousel-item active">
+
+                    {% for i in products %}
+                    <div class="col-xs-3 col-sm-3 col-md-3" id="card_main">
+                        <div class="card align-items-center" style="width: 18rem;">
+                            <img id="imagepr{{i.id}}" src='/media/{{i.plantImage}}' class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <h5 class="card-title" id="namepr{{i.id}}">{{i.plantName}}</h5>
+                                <h6 class="card-text" id="pricepr{{i.id}}">Rs.{{i.plantPrice}}</h6>
+                                <h6 class="card-text" id="nurserypr{{i.id}}" hidden>{{i.plantNursery}}</h6>
+                                <p class="card-text">{{i.plantDesc|slice:'0:53'}}...</p>
+                                <span id="divpr{{i.id}}" class="divpr">
+                                    <button id="pr{{i.id}}" class="btn btn-primary cart">Add to cart</button></span>
+
+                                <a href="/shop/products/{{i.id}}"><button id="qv{{i.id}}"
+                                        class="btn btn-primary">QuickView</button></a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if forloop.counter|divisibleby:4 and forloop.counter > 0 and not forloop.last%}
+                </div>
+
+                <div class="carousel-item">
+                    {% endif %} {% endfor %}
+                </div>
+
+            </div>
+        </div>
+        <!-- left and right controls for the slide -->
+        <a class="carousel-control-prev" href="#demo{{forloop.counter}}" data-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </a>
+        <a class="carousel-control-next" href="#demo{{forloop.counter}}" data-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </a>
+    </div>
+    {% endfor %} {% endblock %}
+</div>
+{% block js %}
+<script>
+    var is_start;
+    if(!isMobile){
+    $("#navbarSupportedContent").append(`<form method="get" action="/shop/search/" class="form-inline my-2 my-lg-0">
+                <span id="search"><input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="search"></span>
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>`);
+        }
+    $("#basicNavbar").append(`<button type="button" class="btn btn-secondary mx-2" id="popcart" data-container="body" data-toggle="popover" data-placement="bottom" data-html="true" data-content="Vivamus
+sagittis lacus vel augue laoreet rutrum faucibus.">
+  Cart(<span id="cart">0</span>)
+</button>`);
+    //find out the cart items from local storage
+    {% if user.is_authenticated %}
+    localStorage.setItem('cart',JSON.stringify({{carty|safe}}))
+    {% endif %}
+    if (localStorage.getItem('cart') == null) {
+        var cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart'));
+        is_start = 2;
+        updateCart(cart);
+    }
+    for (var item in cart) {
+        let idst = item;
+        document.getElementById('div' + item).innerHTML = `<button id="A${idst}" class="btn btn-primary cart" disabled>Added to cart</button>`;
+    }
+    $('.divpr').on('click', 'button.cart', function () {
+        var idstr = this.id.toString();
+        qty = 1;
+        let idst = idstr;
+        name = document.getElementById("name" + idstr).innerHTML;
+        price = document.getElementById("price" + idstr).innerHTML.slice(3);
+        image = document.getElementById("image" + idstr).getAttribute('src');
+        nursery = document.getElementById('nursery' + idstr).innerHTML;
+        cart[idstr] = [qty, name, price, image,nursery];
+        document.getElementById('div' + idstr).innerHTML = `<button id="A${idst}" class="btn btn-primary cart" disabled>Added to cart</button>`;
+
+        updateCart(cart);
+
+    });
+    updatePopover(cart);
+
+    function updatePopover(cart) {
+        var popstr = "";
+        popstr = popstr + "<h5>Cart for your items in Myshopping Cart</h5><div class='mx-2 my-2'>";
+        var i = 1;
+        for (var item in cart) {
+            if (cart[item][0] != 0) {
+                popstr = popstr + "<b>" + i + "</b>. ";
+                popstr = popstr + document.getElementById('name' + item).innerHTML.slice(0, 19) + "..." + " Qty:" + cart[item][0] + " " + "Price:" + cart[item][2] + "<br>";
+                i = i + 1;
+            } else {
+                for (var item in cart) {
+                    if (cart[item][0] == 0) {
+                        delete cart[item];
+                        updateCart(cart);
+                    }
+                }
+            }
+        }
+        popstr = popstr + "</div> <a href='/shop/cart'><button class='btn btn-primary' id='checkout'>View Cart</button></a> <button class='btn btn-primary' onclick='clearCart()' id='clearcart'>Clear Cart</button>";
+
+        document.getElementById('popcart').setAttribute('data-content', popstr);
+        if (is_start != 0) {
+            is_start = is_start - 1;
+        }
+        else {
+            $('#popcart').trigger("dblclick");
+        }
+    }
+
+    function clearCart() {
+        cart = JSON.parse(localStorage.getItem('cart'));
+        for (var item in cart) {
+            document.getElementById('div' + item).innerHTML = '<button id="' + item + '" class="btn btn-primary cart">Add to cart</button>';
+        }
+        localStorage.clear();
+        cart = {};
+        updateCart(cart);
+
+    }
+
+    function updateCart(cart) {
+        var sum = 0;
+        for (var item in cart) {
+            sum = sum + cart[item][0];
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+
+        //dynamically update the cart in the database
+        $.ajax({
+        url: 'ajax/cartUpdate/',
+        data: {
+          'cart': JSON.stringify(cart)
+        }
+        });
+        document.getElementById('cart').innerHTML = sum;
+        updatePopover(cart);
+    }
+    $("#popcart").popover({ trigger: "manual" }).click(function () {
+            window.location = "/shop/cart";
+    })
+    $("#popcart").popover({ trigger: "manual" }).dblclick(function () {
+        var pop = $(this);
+
+        pop.popover("show")
+        pop.on('shown.bs.popover', function () {
+            setTimeout(function () {
+                pop.popover("hide")
+            }, 5700);
+        })
+    })
+
+//To refresh page whenever the user navigates from some other page to this one
+if(performance.navigation.type == 2){
+   location.reload(true);
+}
+
+</script>
+{% endblock %}
+
+

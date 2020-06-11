@@ -1,0 +1,91 @@
+{% extends 'nursery/basic.html' %}
+
+{% block css %}
+<style>
+
+@media (max-width: 767px) { 
+  .w3-card-4{
+        width: 103%;
+    }
+  #orderlist{
+    width: 413px;
+    padding-top: 24px;
+  }
+  .container > div {
+          display: inline-block;
+          display: -moz-inline-box;
+          *display: inline; /* For IE7 */
+          zoom: 1; /* Trigger hasLayout */
+          width: 45%;
+          text-align: center;
+      }
+    
+}
+
+@media (min-width: 767px) { 
+  .w3-card-4{
+      width: 70%;
+  }
+  .container > div {
+          display: inline-block;
+          display: -moz-inline-box;
+          *display: inline; /* For IE7 */
+          zoom: 1; /* Trigger hasLayout */
+          width: 33%;
+          text-align: center;
+      }
+  
+}
+</style>
+{% endblock css %}
+
+{% block body %}
+
+<h1 style="padding-left: 20px; padding-top:20px">Your orders</h1>
+
+<hr>
+
+<div class="w3-container">
+
+<ul style="list-style-type:none;">
+{% for order in allOrders %}
+
+<li style="padding-top: 24px;" id="orderlist">
+  <div class="w3-card-4" style="border: solid;">
+
+    <div class="w3-container" style="padding-bottom: 14px;background-color: darkgrayb">
+      <div class="container">
+        <div>ORDER ID &ensp;:&ensp;{{order.0}} </div>
+        <div>PRODUCT NAME &ensp;:&ensp; {{order.4}}</div>
+        <div>QUANTITY &ensp;:&ensp; {{order.3}}</div>
+      </div><br>
+      <div class="container">
+        <div>ADDRESS&ensp;:&ensp;{{order.1}} </div>
+        <div>PHONE NUMBER&ensp;:&ensp;{{order.2}}</div>
+        <div id="totalAmount">AMOUNT&ensp;:&ensp;{{order.8}}</div>
+        
+      </div>
+    </div>
+
+  <!-- Button to trigger Dropdown -->
+    <button class="w3-button w3-block w3-dark-grey collapsed" type="button" data-toggle="collapse" data-target="#collapseThree{{forloop.counter}}" aria-expanded="false" aria-controls="collapseThree{{forloop.counter}}"><h5>ADD UPDATE</h5></button>
+    
+    <!-- Dropdown -->
+    <div id="collapseThree{{forloop.counter}}" class="collapse">
+      <div class="card-body" style="font-size-adjust: 0.58;">
+        <form method="POST" action="/nursery/saveUpdate/{{order.0}}">{% csrf_token %}
+          <input type="text" name="update" id="update" placeholder="Enter the update here"/>
+          <button type="submit">Update</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</li>
+
+{% endfor %}
+
+</ul>
+</div>
+
+{% endblock body %}
